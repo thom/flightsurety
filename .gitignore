@@ -8,6 +8,7 @@ coverage
 # production
 build
 build_webpack
+prod
 
 # misc
 .DS_Store
@@ -18,8 +19,10 @@ npm-debug.log
 blockchain/geth/**
 blockchain/keystore/**
 blockchain/history
+src/dapp/config.json
+src/server/config.json
 
-#truffle
+# truffle
 .tern-port
 yarn.lock
 package-lock.json
