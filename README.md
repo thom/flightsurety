@@ -74,7 +74,7 @@ Graded according to the [Project Rubric](https://review.udacity.com/#!/rubrics/1
 ### Requirement 5: General
 
 * Contracts must have operational status control
-* Functions must fail fast - user require() at the start of functions
+* Functions must fail fast - use require() at the start of functions
 * Scaffolding code is provided but you are free to replace it with your own code
 
 ## Resources
