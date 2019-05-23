@@ -1,0 +1,42 @@
+Ganache CLI v6.4.3 (ganache-core: 2.5.5)
+
+Available Accounts
+==================
+(0) 0xee7bd0d9f39e605cf6f349e4fca8c32b07232ecb (~100 ETH)
+(1) 0xbb91f66cbed5876315105050346c42f80e35fd73 (~100 ETH)
+(2) 0x938cf73ff916cbd4ac23680411e12986ae03b55e (~100 ETH)
+(3) 0xbac3a69c715f8fa682680e2f0f3be10f0e0c92e5 (~100 ETH)
+(4) 0x542d0f3afac66b7483cc5a8db18747a129a84523 (~100 ETH)
+(5) 0xbad7403acb73e5178e4c3a1b53e55b1b3894e000 (~100 ETH)
+(6) 0x6c344495cd95a5bb240f3976a44dc748e858e38c (~100 ETH)
+(7) 0xc818fdc5f2a71106bb053d26cb554fdec3823537 (~100 ETH)
+(8) 0xaae25e5b9ffa8aaf1daee102c4235a961d1c8e44 (~100 ETH)
+(9) 0xb79638b497e108a099ee29976d744f42929fb9b8 (~100 ETH)
+
+Private Keys
+==================
+(0) 0x12e4e8c34778a9120717b0ebfdf61c54b6b08e86f95c8774b4783b04516b42b5
+(1) 0x50f474b43e12fbd7a3b6cfbe3b67db9273129bb4e958772b8d13c77df958043a
+(2) 0xb50ea32165609e84fa3b6e2f836bc524b8c315683107fbd7083a67201e97489e
+(3) 0x101defb10cf35b9cfa71f1ffdbe7d234fd9b63d0abcc7bd0af3954b4256bc8c3
+(4) 0x75e94fe321a8fa1c91a56c1bd307970b9092a9752a07134bebcba9da8a6c32da
+(5) 0xec0258a8a5a59340b74a4f50588bfa5844ec615ca963e51b50f4c3844095e034
+(6) 0xcaf424f22771567d36fc9ede963c25ba9048f40d91ce3116c5efa8455085bd22
+(7) 0x7490f5ef671af8a82795ffa2dc3dc4c40485a8f74614ab835a683aa33a2e8cb9
+(8) 0x73ba0a6e0635e64554eee6a679ae5bad044dad9ab95ca7df003183371d2b5e2c
+(9) 0x60c42f878ed2e0cde3c1e91d41c15b2bf337b1e078ae4bfbc8e8ce3ba6762893
+
+HD Wallet
+==================
+Mnemonic:      forget chief exist liberty video cash twelve nest grief umbrella panel trumpet
+Base HD Path:  m/44'/60'/0'/0/{account_index}
+
+Gas Price
+==================
+20000000000
+
+Gas Limit
+==================
+300000000
+
+Listening on 127.0.0.1:8545
