@@ -1,4 +1,4 @@
-pragma solidity ^0.4.25;
+pragma solidity ^0.5.0;
 
 import "../node_modules/openzeppelin-solidity/contracts/math/SafeMath.sol";
 
@@ -43,7 +43,7 @@ contract FlightSuretyData {
     */
     modifier requireIsOperational() 
     {
-        require(operational, "Contract is currently not operational");
+        require(isOperational(), "Contract is currently not operational");
         _;  // All modifiers require an "_" which indicates where the function body will be added
     }
 
@@ -65,12 +65,8 @@ contract FlightSuretyData {
     *
     * @return A bool that is the current operating status
     */      
-    function isOperational() 
-                            public 
-                            view 
-                            returns(bool) 
-    {
-        return operational;
+    function isOperational() public view returns(bool) {
+      return operational;
     }
 
 
@@ -79,14 +75,8 @@ contract FlightSuretyData {
     *
     * When operational mode is disabled, all write transactions except for this one will fail
     */    
-    function setOperatingStatus
-                            (
-                                bool mode
-                            ) 
-                            external
-                            requireContractOwner 
-    {
-        operational = mode;
+    function setOperatingStatus(bool mode) external requireContractOwner {
+      operational = mode;
     }
 
     /********************************************************************************************/
@@ -102,7 +92,7 @@ contract FlightSuretyData {
                             (   
                             )
                             external
-                            pure
+                            requireIsOperational
     {
     }
 
@@ -116,6 +106,7 @@ contract FlightSuretyData {
                             )
                             external
                             payable
+                            requireIsOperational
     {
 
     }
@@ -127,7 +118,7 @@ contract FlightSuretyData {
                                 (
                                 )
                                 external
-                                pure
+                                requireIsOperational
     {
     }
     
@@ -140,7 +131,7 @@ contract FlightSuretyData {
                             (
                             )
                             external
-                            pure
+                            requireIsOperational
     {
     }
 
@@ -154,6 +145,7 @@ contract FlightSuretyData {
                             )
                             public
                             payable
+                            requireIsOperational
     {
     }
 
@@ -176,11 +168,9 @@ contract FlightSuretyData {
     */
     function() 
                             external 
-                            payable 
+                            payable
     {
         fund();
     }
-
-
 }
 
