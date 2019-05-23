@@ -76,6 +76,7 @@ contract FlightSuretyData {
     * When operational mode is disabled, all write transactions except for this one will fail
     */    
     function setOperatingStatus(bool mode) external requireContractOwner {
+      require(mode != operational, "New mode must be different from existing mode");
       operational = mode;
     }
 
