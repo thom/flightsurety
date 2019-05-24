@@ -12,6 +12,11 @@ contract FlightSuretyData {
     address private contractOwner;                                      // Account used to deploy contract
     bool private operational = true;                                    // Blocks all state changes throughout the contract if false
 
+    // Multi-party consensus
+    // Added to setOperational() to practice the concept
+    uint constant M = 1;
+    address[] multiCalls = new address[](0);
+
     /********************************************************************************************/
     /*                                       EVENT DEFINITIONS                                  */
     /********************************************************************************************/
@@ -41,8 +46,7 @@ contract FlightSuretyData {
     *      This is used on all state changing functions to pause the contract in 
     *      the event there is an issue that needs to be fixed
     */
-    modifier requireIsOperational() 
-    {
+    modifier requireIsOperational() {
         require(isOperational(), "Contract is currently not operational");
         _;  // All modifiers require an "_" which indicates where the function body will be added
     }
@@ -50,8 +54,7 @@ contract FlightSuretyData {
     /**
     * @dev Modifier that requires the "ContractOwner" account to be the function caller
     */
-    modifier requireContractOwner()
-    {
+    modifier requireContractOwner() {
         require(msg.sender == contractOwner, "Caller is not contract owner");
         _;
     }
@@ -77,7 +80,24 @@ contract FlightSuretyData {
     */    
     function setOperatingStatus(bool mode) external requireContractOwner {
       require(mode != operational, "New mode must be different from existing mode");
-      operational = mode;
+
+      bool isDuplicate = false;
+
+      for(uint i = 0; i < multiCalls.length; i++) {
+        if (multiCalls[i] == msg.sender) {
+          isDuplicate = true;
+          break;
+        }
+      }
+
+      require(!isDuplicate, "Caller has already called this function.");
+
+      multiCalls.push(msg.sender);
+
+      if (multiCalls.length >= M) {
+        operational = mode;
+        multiCalls = new address[](0);
+      }
     }
 
     /********************************************************************************************/
