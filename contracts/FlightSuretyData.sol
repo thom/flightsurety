@@ -17,6 +17,9 @@ contract FlightSuretyData {
     uint constant M = 1;
     address[] multiCalls = new address[](0);
 
+    // Restrict data contract callers
+    mapping(address => uint256) private authorizedContracts;
+
     /********************************************************************************************/
     /*                                       EVENT DEFINITIONS                                  */
     /********************************************************************************************/
@@ -59,6 +62,14 @@ contract FlightSuretyData {
         _;
     }
 
+    /**
+    * @dev Modifier that requires function caller to be authorized
+    */
+    modifier requireIsCallerAuthorized() {
+        require(authorizedContracts[msg.sender] == 1, "Caller is not authorized");
+        _;
+    }
+
     /********************************************************************************************/
     /*                                       UTILITY FUNCTIONS                                  */
     /********************************************************************************************/
@@ -71,7 +82,6 @@ contract FlightSuretyData {
     function isOperational() public view returns(bool) {
       return operational;
     }
-
 
     /**
     * @dev Sets contract operations on/off
@@ -98,6 +108,20 @@ contract FlightSuretyData {
         operational = mode;
         multiCalls = new address[](0);
       }
+    }
+
+    /**
+    * @dev Adds address to authorized contracts
+    */
+    function authorizeCaller(address contractAddress) external requireContractOwner {
+      authorizedContracts[contractAddress] = 1;
+    }
+
+    /**
+    * @dev Removes address from authorized contracts
+    */
+    function deauthorizeCaller(address contractAddress) external requireContractOwner {
+      delete authorizedContracts[contractAddress];
     }
 
     /********************************************************************************************/
