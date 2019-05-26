@@ -1,5 +1,62 @@
 pragma solidity ^0.5.0;
 
+/*
+Requirement 1: Separation of concerns
+[TODO] FlightSuretyData contract for data persistence
+[TODO] FlightSuretyApp contract for app logic and oracles code
+[TODO] DApp client for triggering contract calls
+[TODO] Server app for simulating oracles
+
+Requirement 2: Airlines
+[DONE] Register first airline when contract is deployed
+[TODO] Only existing airline may register a new airline until there are at least four airlines registered
+[TODO] Registration of fifth and subsequent airlines requires multi-party consensus of 50% of registered airlines
+[TODO] Airline can be registered, but does not participate in contract until it submits funding of 10 ether
+
+Requirement 3: Passengers
+[TODO] Passengers may pay upto 1 ether for purchasing flight insurance
+[TODO] Flight numbers and timestamps are fixed for the purpose of the project and can be defined in the DApp client
+[TODO] If the flight is delayed due to airline fault, passenger receives credit of 1.5x the amount they paid
+[TODO] Funds are transfered from contract to the passenger wallet only when they initiate a withdrawal
+
+Requirement 4: Oracles
+[TODO] Oracles are implemented as a server app
+[TODO] Upon startup, 20+ oracles are registered and their assigned indexes are persisted in memory
+[TODO] Client DApp is used to trigger request to update flight status generating OracleRequest event that is captured by server
+[TODO] Server will loop through all registered oracles, identify those oracles for which the request applies, and respond by calling into app logic contract with the ropriate status code
+
+Requirement 5: General
+[TODO] Contracts must have operational status control
+[TODO] Functions must fail fast - use require() at the start of functions
+[TODO] Scaffolding code is provided but you are free to replace it with your own code
+
+Separation of Concerns, Operational Control and “Fail Fast”
+[TODO] Smart Contract Seperation: Smart Contract code is separated into multiple contracts: 1) FlightSuretyData.sol for data persistence, 2) FlightSuretyApp.sol for  logic and oracles code
+[TODO] Dapp Created and Used for Contract Calls: A Dapp client has been created and is used for triggering contract calls. Client can be launched with “npm run dapp”  is available at http://localhost:8000. Specific contract calls: 1) Passenger can purchase insurance for flight, 2) Trigger contract to request flight status update
+[TODO] Oracle Server Application: A server app has been created for simulating oracle behavior. Server can be launched with “npm run server”
+[TODO] Operational status control is implemented in contracts: Students has implemented operational status control.
+[TODO] Fail Fast Contract: Contract functions “fail fast” by having a majority of “require()” calls at the beginning of function body
+
+Airlines
+[DONE] Airline Contract Initialization: First airline is registered when contract is deployed.
+[TODO] Multiparty Consensus: Only existing airline may register a new airline until there are at least four airlines registered (demonstrated either with Truffle test by making call from client Dapp)
+[TODO] Multiparty Consensus: Registration of fifth and subsequent airlines requires multi-party consensus of 50% of registered airlines (demonstrated either with ffle test or by making call from client Dapp)
+[TODO] Airline Ante: Airline can be registered, but does not participate in contract until it submits funding of 10 ether  (demonstrated either with Truffle test or by [ng call from client Dapp)
+
+Passengers
+[TODO] Passenger Airline Choice: Passengers can choose from a fixed list of flight numbers and departure that are defined in the Dapp client
+[TODO] Passenger Payment: Passengers may pay up to 1 ether for purchasing flight insurance.
+[TODO] Passenger Repayment: If flight is delayed due to airline fault, passenger receives credit of 1.5X the amount they paid
+[TODO] Passenger Withdraw: Passenger can withdraw any funds owed to them as a result of receiving credit for insurance payout
+[TODO] Insurance Payouts: Insurance payouts are not sent directly to passenger’s wallet
+
+Oracles (Server App)
+[TODO] Functioning Oracle: Oracle functionality is implemented in the server app.
+[TODO] Oracle Initialization: Upon startup, 20+ oracles are registered and their assigned indexes are persisted in memory
+[TODO] Oracle Updates: Update flight status requests from client Dapp result in OracleRequest event emitted by Smart Contract that is captured by server (displays on [ole and handled in code)
+[TODO] Oracle Functionality: Server will loop through all registered oracles, identify those oracles for which the OracleRequest event applies, and respond by calling into FlightSuretyApp contract with random status code of Unknown (0), On Time (10) or Late Airline (20), Late Weather (30), Late Technical (40), or Late Other (50)
+*/
+
 // It's important to avoid vulnerabilities due to numeric overflow bugs
 // OpenZeppelin's SafeMath library, when used correctly, protects agains such bugs
 // More info: https://www.nccgroup.trust/us/about-us/newsroom-and-events/blog/2018/november/smart-contract-insecurity-bad-arithmetic/
@@ -45,9 +102,12 @@ contract FlightSuretyApp {
   * @dev Contract constructor
   *
   */
-  constructor (address dataContract) public {
+  constructor (address dataContract, address firstAirline) public {
     contractOwner = msg.sender;
     flightSuretyData = FlightSuretyData(dataContract);
+
+    // Airline Contract Initialization: First airline is registered when contract is deployed
+    registerAirline(firstAirline);
   }
 
   /********************************************************************************************/
@@ -87,7 +147,7 @@ contract FlightSuretyApp {
   /*                                       UTILITY FUNCTIONS                                  */
   /********************************************************************************************/
 
-  function isOperational() public view returns(bool) {
+  function isOperational() external view returns(bool) {
     return flightSuretyData.isOperational();
   }
 
@@ -99,7 +159,7 @@ contract FlightSuretyApp {
   * @dev Add an airline to the registration queue
   *
   */   
-  function registerAirline() external requireIsOperational returns(bool success, uint256 votes) {
+  function registerAirline(address airlineAddress) public requireIsOperational returns(bool success, uint256 votes) {
     return (success, 0);
   }
 
@@ -252,8 +312,9 @@ contract FlightSuretyApp {
 
 // FlightSurety data contract interface
 contract FlightSuretyData {
-  function isOperational() public view returns(bool);
+  function isOperational() external view returns(bool);
 
   // Airlines
-  function registerAirline(address airline, address newAirline) public;
+  function registerAirline(address registeringAirline, address newAirline) external;
+  function isAirline(address airline) external view returns(bool); 
 }

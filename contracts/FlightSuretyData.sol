@@ -20,6 +20,17 @@ contract FlightSuretyData {
   // Restrict data contract callers
   mapping(address => uint256) private authorizedContracts;
 
+  // Airlines
+  struct Airline {
+    string name;
+    bool isActive;
+    bool isFunded;
+    bool isRegistered;
+  }
+  mapping(address => Airline) private airlines;
+  address[] registeredAirlines = new address[](0);
+
+
   /********************************************************************************************/
   /*                                       CONSTRUCTOR                                        */
   /********************************************************************************************/
@@ -45,7 +56,7 @@ contract FlightSuretyData {
   *      the event there is an issue that needs to be fixed
   */
   modifier requireIsOperational() {
-    require(isOperational(), "Contract is currently not operational");
+    require(operational, "Contract is currently not operational");
     _;  // All modifiers require an "_" which indicates where the function body will be added
   }
 
@@ -80,8 +91,17 @@ contract FlightSuretyData {
   *
   * @return A bool that is the current operating status
   */      
-  function isOperational() public view returns(bool) {
+  function isOperational() external view returns(bool) {
     return operational;
+  }
+
+  /**
+   * @dev Check if the address is an airline
+   *
+   * @return A bool confirming whether or not the address is an airline
+   */
+  function isAirline(address airline) external view returns(bool) {
+    return airlines[airline].isActive;
   }
 
   /**
@@ -133,8 +153,8 @@ contract FlightSuretyData {
   * @dev Add an airline to the registration queue
   *      Can only be called from FlightSuretyApp contract
   *
-  */   
-  function registerAirline() external requireIsOperational {
+  */
+  function registerAirline(address registeringAirline, address newAirline) external requireIsOperational requireIsCallerAuthorized {
 
   }
 
