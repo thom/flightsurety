@@ -35,8 +35,20 @@ contract FlightSuretyApp {
     uint256 updatedTimestamp;        
     address airline;
   }
-
   mapping(bytes32 => Flight) private flights;
+
+  /********************************************************************************************/
+  /*                                       CONSTRUCTOR                                        */
+  /********************************************************************************************/
+
+  /**
+  * @dev Contract constructor
+  *
+  */
+  constructor (address dataContract) public {
+    contractOwner = msg.sender;
+    flightSuretyData = FlightSuretyData(dataContract);
+  }
 
   /********************************************************************************************/
   /*                                       FUNCTION MODIFIERS                                 */
@@ -66,17 +78,10 @@ contract FlightSuretyApp {
   }
 
   /********************************************************************************************/
-  /*                                       CONSTRUCTOR                                        */
+  /*                                       EVENT DEFINITIONS                                  */
   /********************************************************************************************/
 
-  /**
-  * @dev Contract constructor
-  *
-  */
-  constructor (address dataContract) public {
-    contractOwner = msg.sender;
-    flightSuretyData = FlightSuretyData(dataContract);
-  }
+  //TBD
 
   /********************************************************************************************/
   /*                                       UTILITY FUNCTIONS                                  */
@@ -248,4 +253,7 @@ contract FlightSuretyApp {
 // FlightSurety data contract interface
 contract FlightSuretyData {
   function isOperational() public view returns(bool);
+
+  // Airlines
+  function registerAirline(address airline, address newAirline) public;
 }

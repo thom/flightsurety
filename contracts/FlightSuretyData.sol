@@ -21,7 +21,7 @@ contract FlightSuretyData {
   mapping(address => uint256) private authorizedContracts;
 
   /********************************************************************************************/
-  /*                                       EVENT DEFINITIONS                                  */
+  /*                                       CONSTRUCTOR                                        */
   /********************************************************************************************/
 
   /**
@@ -64,6 +64,12 @@ contract FlightSuretyData {
     require(authorizedContracts[msg.sender] == 1, "Caller is not authorized");
     _;
   }
+
+  /********************************************************************************************/
+  /*                                       EVENT DEFINITIONS                                  */
+  /********************************************************************************************/
+
+  //TBD
 
   /********************************************************************************************/
   /*                                       UTILITY FUNCTIONS                                  */
@@ -131,7 +137,6 @@ contract FlightSuretyData {
   function registerAirline() external requireIsOperational {
 
   }
-
 
   /**
   * @dev Buy insurance for a flight
