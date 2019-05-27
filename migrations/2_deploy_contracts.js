@@ -3,10 +3,11 @@ const FlightSuretyData = artifacts.require("FlightSuretyData");
 const fs = require('fs');
 
 module.exports = function(deployer, network, accounts) {
-  let firstAirline = accounts[1];
-  deployer.deploy(FlightSuretyData).then(() => {
-    // Airline Contract Initialization: First airline is registered when contract is deployed
-    return deployer.deploy(FlightSuretyApp, FlightSuretyData.address, firstAirline).then(() => {
+  let firstAirlineName = "Swiss International Airlines";
+  let firstAirlineAddress = accounts[1];
+  // Airline Contract Initialization: First airline is registered when contract is deployed
+  deployer.deploy(FlightSuretyData, firstAirlineName, firstAirlineAddress).then(() => {
+    return deployer.deploy(FlightSuretyApp, FlightSuretyData.address).then(() => {
       let config = {
         localhost: {
           url: 'http://localhost:8545',
