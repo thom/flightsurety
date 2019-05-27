@@ -9,9 +9,9 @@ Requirement 1: Separation of concerns
 
 Requirement 2: Airlines
 [DONE] Register first airline when contract is deployed
-[TODO] Only existing airline may register a new airline until there are at least four airlines registered
-[TODO] Registration of fifth and subsequent airlines requires multi-party consensus of 50% of registered airlines
-[TODO] Airline can be registered, but does not participate in contract until it submits funding of 10 ether
+[DONE] Only existing airline may register a new airline until there are at least four airlines registered
+[DONE] Registration of fifth and subsequent airlines requires multi-party consensus of 50% of registered airlines
+[DONE] Airline can be registered, but does not participate in contract until it submits funding of 10 ether
 
 Requirement 3: Passengers
 [TODO] Passengers may pay upto 1 ether for purchasing flight insurance
@@ -39,9 +39,9 @@ Separation of Concerns, Operational Control and “Fail Fast”
 
 Airlines
 [DONE] Airline Contract Initialization: First airline is registered when contract is deployed.
-[TODO] Multiparty Consensus: Only existing airline may register a new airline until there are at least four airlines registered (demonstrated either with Truffle test by making call from client Dapp)
-[TODO] Multiparty Consensus: Registration of fifth and subsequent airlines requires multi-party consensus of 50% of registered airlines (demonstrated either with ffle test or by making call from client Dapp)
-[TODO] Airline Ante: Airline can be registered, but does not participate in contract until it submits funding of 10 ether  (demonstrated either with Truffle test or by [ng call from client Dapp)
+[DONE] Multiparty Consensus: Only existing airline may register a new airline until there are at least four airlines registered (demonstrated either with Truffle test by making call from client Dapp)
+[DONE] Multiparty Consensus: Registration of fifth and subsequent airlines requires multi-party consensus of 50% of registered airlines (demonstrated either with ffle test or by making call from client Dapp)
+[DONE] Airline Ante: Airline can be registered, but does not participate in contract until it submits funding of 10 ether  (demonstrated either with Truffle test or by [ng call from client Dapp)
 
 Passengers
 [TODO] Passenger Airline Choice: Passengers can choose from a fixed list of flight numbers and departure that are defined in the Dapp client
@@ -76,7 +76,7 @@ contract FlightSuretyApp {
   // FlightSurety data contract
   FlightSuretyData flightSuretyData;
 
-  // Flight status codees
+  // Flight status codes
   uint8 private constant STATUS_CODE_UNKNOWN = 0;
   uint8 private constant STATUS_CODE_ON_TIME = 10;
   uint8 private constant STATUS_CODE_LATE_AIRLINE = 20;
@@ -86,6 +86,7 @@ contract FlightSuretyApp {
 
   address private contractOwner;          // Account used to deploy contract
 
+  // Flights
   struct Flight {
     bool isRegistered;
     uint8 statusCode;
@@ -93,6 +94,16 @@ contract FlightSuretyApp {
     address airline;
   }
   mapping(bytes32 => Flight) private flights;
+
+  // Multi-party consensus for airline registration
+  mapping(address => address[]) private registerAirlineMultiCalls;
+
+  // Registration of fifth and subsequent airlines requires multi-party consensus of 50% of registered airlines
+  uint constant REGISTER_AIRLINE_MULTI_CALL_THRESHOLD = 4;
+  uint constant REGISTER_AIRLINE_MULTI_CALL_CONSENSUS_DIVISOR = 2;
+
+  // Airline Ante: Airline can be registered, but does not participate in contract until it submits funding of 10 ether
+  uint constant AIRLINE_FUNDING_VALUE = 10 ether;
 
   /********************************************************************************************/
   /*                                       CONSTRUCTOR                                        */
@@ -102,12 +113,8 @@ contract FlightSuretyApp {
   * @dev Contract constructor
   *
   */
-  constructor (address dataContract, address firstAirline) public {
-    contractOwner = msg.sender;
+  constructor(address dataContract) public {
     flightSuretyData = FlightSuretyData(dataContract);
-
-    // Airline Contract Initialization: First airline is registered when contract is deployed
-    registerAirline(firstAirline);
   }
 
   /********************************************************************************************/
@@ -118,10 +125,10 @@ contract FlightSuretyApp {
   // before a function is allowed to be executed.
 
   /**
-  * @dev Modifier that requires the "operational" boolean variable to be "true"
-  *      This is used on all state changing functions to pause the contract in 
-  *      the event there is an issue that needs to be fixed
-  */
+   * @dev Modifier that requires the "operational" boolean variable to be "true"
+   *      This is used on all state changing functions to pause the contract in 
+   *      the event there is an issue that needs to be fixed
+   */
   modifier requireIsOperational() {
     // Modify to call data contract's status
     require(flightSuretyData.isOperational(), "Contract is currently not operational");  
@@ -129,19 +136,13 @@ contract FlightSuretyApp {
   }
 
   /**
-  * @dev Modifier that requires the "ContractOwner" account to be the function caller
-  */
+   * @dev Modifier that requires the "ContractOwner" account to be the function caller
+   */
   modifier requireContractOwner()
   {
     require(msg.sender == contractOwner, "Caller is not contract owner");
     _;
   }
-
-  /********************************************************************************************/
-  /*                                       EVENT DEFINITIONS                                  */
-  /********************************************************************************************/
-
-  //TBD
 
   /********************************************************************************************/
   /*                                       UTILITY FUNCTIONS                                  */
@@ -156,26 +157,69 @@ contract FlightSuretyApp {
   /********************************************************************************************/
 
   /**
-  * @dev Add an airline to the registration queue
-  *
-  */   
-  function registerAirline(address airlineAddress) public requireIsOperational returns(bool success, uint256 votes) {
-    return (success, 0);
+   * @dev Add an airline to the registration queue
+   */
+  function registerAirline(string memory name, address addr) public requireIsOperational returns(bool success, uint256 votes) {
+    require(addr != address(0), "Invalid address");
+
+    // Multiparty Consensus: Only existing airline may register a new airline until there are at least four airlines registered
+    // Airline Ante: Airline can be registered, but does not participate in contract until it submits funding of 10 ether
+    require(flightSuretyData.isFundedAirline(msg.sender), "Only existing and funded airlines may register a new airline");
+
+    bool result = true;
+    address[] memory registeredAirlines = flightSuretyData.getRegisteredAirlines();
+
+    // Register first airline
+    if(registeredAirlines.length == 0) {
+      flightSuretyData.registerAirline(name, addr);
+    }
+    else if(registeredAirlines.length <= REGISTER_AIRLINE_MULTI_CALL_THRESHOLD) {
+      flightSuretyData.registerAirline(name, addr);
+    }
+    // Multiparty Consensus: Registration of fifth and subsequent airlines requires multi-party consensus of 50% of registered airlines
+    else {
+      bool isDuplicate = false;
+
+      for(uint i = 0; i < registerAirlineMultiCalls[addr].length; i++) {
+        if (registerAirlineMultiCalls[addr][i] == msg.sender) {
+          isDuplicate = true;
+          break;
+        }
+      }
+
+      require(!isDuplicate, "Caller has already called this function.");
+
+      registerAirlineMultiCalls[addr].push(msg.sender);
+
+      if (registerAirlineMultiCalls[addr].length > registeredAirlines.length.div(REGISTER_AIRLINE_MULTI_CALL_CONSENSUS_DIVISOR)) {
+        flightSuretyData.registerAirline(name, addr);
+        // Reset voting process for this airline
+        registerAirlineMultiCalls[addr] = new address[](0);
+      }
+    }
+
+    return (result, registerAirlineMultiCalls[addr].length);
   }
 
+  /**
+   * @dev Submit funding for airline
+   */   
+  function fundAirline() payable external requireIsOperational {
+    require(msg.value >= AIRLINE_FUNDING_VALUE, "Not enough funding submitted");
+    address(uint160(address(flightSuretyData))).transfer(msg.value);
+    flightSuretyData.fundAirline(msg.sender);
+  }
 
   /**
-  * @dev Register a future flight for insuring.
-  *
-  */  
+   * @dev Register a future flight for insuring.
+   */  
   function registerFlight() external requireIsOperational {
 
   }
   
   /**
-  * @dev Called after oracle has updated flight status
-  *
-  */  
+   * @dev Called after oracle has updated flight status
+   */  
   function processFlightStatus(address airline, string memory flight, uint256 timestamp, uint8 statusCode) internal requireIsOperational {
 
   }
@@ -312,9 +356,13 @@ contract FlightSuretyApp {
 
 // FlightSurety data contract interface
 contract FlightSuretyData {
-  function isOperational() external view returns(bool);
+  function isOperational() public view returns(bool);
+  function setOperatingStatus(bool mode) external;
 
   // Airlines
-  function registerAirline(address registeringAirline, address newAirline) external;
-  function isAirline(address airline) external view returns(bool); 
+  function registerAirline(string calldata name, address addr) external returns(bool success);
+  function isAirline(address airline) external view returns(bool);
+  function isFundedAirline(address airline) external view returns(bool);
+  function getRegisteredAirlines() external view returns(address[] memory);
+  function fundAirline(address addr) payable external;
 }
