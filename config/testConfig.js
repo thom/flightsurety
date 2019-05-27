@@ -22,17 +22,19 @@ var Config = async function(accounts) {
 
 
     let owner = accounts[0];
-    let firstAirline = accounts[1];
+    let firstAirlineAddress = accounts[1];
+    let firstAirlineName = "Swiss International Airlines";
 
-    let flightSuretyData = await FlightSuretyData.new();
-    let flightSuretyApp = await FlightSuretyApp.new(flightSuretyData.address, firstAirline);
+    let flightSuretyData = await FlightSuretyData.new(firstAirlineName, firstAirlineAddress);
+    let flightSuretyApp = await FlightSuretyApp.new(flightSuretyData.address);
 
     console.log("flightSuretyData.address: " + flightSuretyData.address);
     console.log("flightSuretyApp.address: " + flightSuretyApp.address);
 
     return {
         owner: owner,
-        firstAirline: firstAirline,
+        firstAirlineName: firstAirlineName,
+        firstAirlineAddress: firstAirlineAddress,
         weiMultiple: (new BigNumber(10)).pow(18),
         testAddresses: testAddresses,
         flightSuretyData: flightSuretyData,

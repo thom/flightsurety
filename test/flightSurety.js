@@ -59,7 +59,7 @@ contract('Flight Surety Tests', async (accounts) => {
     assert.equal(reverted, true, "Access not blocked for requireIsOperational");
 
     // Set it back for other tests to work
-    //await config.flightSuretyData.setOperatingStatus(true);
+    await config.flightSuretyData.setOperatingStatus(true);
   });
 
   it('(airline) cannot register an Airline using registerAirline() if it is not funded', async () => {
@@ -68,13 +68,25 @@ contract('Flight Surety Tests', async (accounts) => {
 
     // ACT
     try {
-      await config.flightSuretyApp.registerAirline(newAirline, {from: config.firstAirline});
+      await config.flightSuretyApp.registerAirline("Lufthansa", newAirline, {from: config.firstAirlineAddress});
     }
     catch(e) {
+      //console.log(e);
     }
     let result = await config.flightSuretyData.isAirline.call(newAirline); 
 
     // ASSERT
     assert.equal(result, false, "Airline should not be able to register another airline if it hasn't provided funding");
+  });
+
+  it('(airline) TODO', async () => {
+    // ARRANGE
+    //TODO
+
+    // ACT
+    //TODO
+
+    // ASSERT
+    //TODO
   });
 });
