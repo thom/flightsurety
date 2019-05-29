@@ -132,7 +132,6 @@ contract FlightSuretyApp {
 
     bool result = false;
     address[] memory registeredAirlines = flightSuretyData.getRegisteredAirlines();
-    emit Debug(registeredAirlines.length);
 
     // Register first airline
     if(registeredAirlines.length == 0) {
