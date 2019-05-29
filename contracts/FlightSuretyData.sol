@@ -29,6 +29,14 @@ contract FlightSuretyData {
   mapping(address => Airline) private airlines;
   address[] registeredAirlines = new address[](0);
 
+  // Flights
+  struct Flight {
+    bool isRegistered;
+    uint8 statusCode;
+    uint256 updatedTimestamp;
+    address airline;
+  }
+  mapping(bytes32 => Flight) private flights;
 
   /********************************************************************************************/
   /*                                       CONSTRUCTOR                                        */

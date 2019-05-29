@@ -44,15 +44,6 @@ contract FlightSuretyApp {
 
   address private contractOwner;          // Account used to deploy contract
 
-  // Flights
-  struct Flight {
-    bool isRegistered;
-    uint8 statusCode;
-    uint256 updatedTimestamp;        
-    address airline;
-  }
-  mapping(bytes32 => Flight) private flights;
-
   // Multi-party consensus for airline registration
   mapping(address => address[]) private registerAirlineMultiCalls;
 
@@ -320,6 +311,7 @@ contract FlightSuretyApp {
 
 // FlightSurety data contract interface
 contract FlightSuretyData {
+  // Utility functions
   function isOperational() public view returns(bool);
   function setOperatingStatus(bool mode) external;
 
