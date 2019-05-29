@@ -105,6 +105,15 @@ contract FlightSuretyData {
   }
 
   /**
+   * @dev Get airline details
+   *
+   * @return Airline with the provided address
+   */
+  function getAirlineName(address airline) external view returns(string memory) {
+    return airlines[airline].name;
+  }
+
+  /**
    * @dev Check if the address is a registered airline
    *
    * @return A bool confirming whether or not the address is a registered airline

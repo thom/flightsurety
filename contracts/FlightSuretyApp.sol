@@ -1,48 +1,6 @@
 pragma solidity ^0.5.0;
 
 /*
-Requirement 1: Separation of concerns
-[TODO] FlightSuretyData contract for data persistence
-[TODO] FlightSuretyApp contract for app logic and oracles code
-[TODO] DApp client for triggering contract calls
-[TODO] Server app for simulating oracles
-
-Requirement 2: Airlines
-[DONE] Register first airline when contract is deployed
-[DONE] Only existing airline may register a new airline until there are at least four airlines registered
-[DONE] Registration of fifth and subsequent airlines requires multi-party consensus of 50% of registered airlines
-[DONE] Airline can be registered, but does not participate in contract until it submits funding of 10 ether
-
-Requirement 3: Passengers
-[TODO] Passengers may pay upto 1 ether for purchasing flight insurance
-[TODO] Flight numbers and timestamps are fixed for the purpose of the project and can be defined in the DApp client
-[TODO] If the flight is delayed due to airline fault, passenger receives credit of 1.5x the amount they paid
-[TODO] Funds are transfered from contract to the passenger wallet only when they initiate a withdrawal
-
-Requirement 4: Oracles
-[TODO] Oracles are implemented as a server app
-[TODO] Upon startup, 20+ oracles are registered and their assigned indexes are persisted in memory
-[TODO] Client DApp is used to trigger request to update flight status generating OracleRequest event that is captured by server
-[TODO] Server will loop through all registered oracles, identify those oracles for which the request applies, and respond by calling into app logic contract with the ropriate status code
-
-Requirement 5: General
-[TODO] Contracts must have operational status control
-[TODO] Functions must fail fast - use require() at the start of functions
-[TODO] Scaffolding code is provided but you are free to replace it with your own code
-
-Separation of Concerns, Operational Control and “Fail Fast”
-[TODO] Smart Contract Seperation: Smart Contract code is separated into multiple contracts: 1) FlightSuretyData.sol for data persistence, 2) FlightSuretyApp.sol for  logic and oracles code
-[TODO] Dapp Created and Used for Contract Calls: A Dapp client has been created and is used for triggering contract calls. Client can be launched with “npm run dapp”  is available at http://localhost:8000. Specific contract calls: 1) Passenger can purchase insurance for flight, 2) Trigger contract to request flight status update
-[TODO] Oracle Server Application: A server app has been created for simulating oracle behavior. Server can be launched with “npm run server”
-[TODO] Operational status control is implemented in contracts: Students has implemented operational status control.
-[TODO] Fail Fast Contract: Contract functions “fail fast” by having a majority of “require()” calls at the beginning of function body
-
-Airlines
-[DONE] Airline Contract Initialization: First airline is registered when contract is deployed.
-[DONE] Multiparty Consensus: Only existing airline may register a new airline until there are at least four airlines registered (demonstrated either with Truffle test by making call from client Dapp)
-[DONE] Multiparty Consensus: Registration of fifth and subsequent airlines requires multi-party consensus of 50% of registered airlines (demonstrated either with ffle test or by making call from client Dapp)
-[DONE] Airline Ante: Airline can be registered, but does not participate in contract until it submits funding of 10 ether  (demonstrated either with Truffle test or by [ng call from client Dapp)
-
 Passengers
 [TODO] Passenger Airline Choice: Passengers can choose from a fixed list of flight numbers and departure that are defined in the Dapp client
 [TODO] Passenger Payment: Passengers may pay up to 1 ether for purchasing flight insurance.
@@ -145,6 +103,12 @@ contract FlightSuretyApp {
   }
 
   /********************************************************************************************/
+  /*                                       EVENT DEFINITIONS                                  */
+  /********************************************************************************************/
+
+  event AirlineRegistered(string name, address addr, bool success, uint256 votes);
+
+  /********************************************************************************************/
   /*                                       UTILITY FUNCTIONS                                  */
   /********************************************************************************************/
 
@@ -166,15 +130,16 @@ contract FlightSuretyApp {
     // Airline Ante: Airline can be registered, but does not participate in contract until it submits funding of 10 ether
     require(flightSuretyData.isFundedAirline(msg.sender), "Only existing and funded airlines may register a new airline");
 
-    bool result = true;
+    bool result = false;
     address[] memory registeredAirlines = flightSuretyData.getRegisteredAirlines();
+    emit Debug(registeredAirlines.length);
 
     // Register first airline
     if(registeredAirlines.length == 0) {
-      flightSuretyData.registerAirline(name, addr);
+      result = flightSuretyData.registerAirline(name, addr);
     }
-    else if(registeredAirlines.length <= REGISTER_AIRLINE_MULTI_CALL_THRESHOLD) {
-      flightSuretyData.registerAirline(name, addr);
+    else if(registeredAirlines.length < REGISTER_AIRLINE_MULTI_CALL_THRESHOLD) {
+      result = flightSuretyData.registerAirline(name, addr);
     }
     // Multiparty Consensus: Registration of fifth and subsequent airlines requires multi-party consensus of 50% of registered airlines
     else {
@@ -191,13 +156,13 @@ contract FlightSuretyApp {
 
       registerAirlineMultiCalls[addr].push(msg.sender);
 
-      if (registerAirlineMultiCalls[addr].length > registeredAirlines.length.div(REGISTER_AIRLINE_MULTI_CALL_CONSENSUS_DIVISOR)) {
-        flightSuretyData.registerAirline(name, addr);
-        // Reset voting process for this airline
+      if (registerAirlineMultiCalls[addr].length >= registeredAirlines.length.div(REGISTER_AIRLINE_MULTI_CALL_CONSENSUS_DIVISOR)) {
+        result = flightSuretyData.registerAirline(name, addr);
         registerAirlineMultiCalls[addr] = new address[](0);
       }
     }
 
+    emit AirlineRegistered(name, addr, result, registerAirlineMultiCalls[addr].length);
     return (result, registerAirlineMultiCalls[addr].length);
   }
 
@@ -360,7 +325,7 @@ contract FlightSuretyData {
   function setOperatingStatus(bool mode) external;
 
   // Airlines
-  function registerAirline(string calldata name, address addr) external returns(bool success);
+  function registerAirline(string calldata name, address addr) external returns(bool);
   function isAirline(address airline) external view returns(bool);
   function isFundedAirline(address airline) external view returns(bool);
   function getRegisteredAirlines() external view returns(address[] memory);
