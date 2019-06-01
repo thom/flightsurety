@@ -4,7 +4,7 @@ var BigNumber = require('bignumber.js');
 contract('Flight Surety Tests', async (accounts) => {
   var config;
   const AIRLINE_FUNDING_VALUE = web3.utils.toWei("10", "ether");
-  const timestamp = Date.now();
+  const timestamp = Math.floor(Date.now() / 1000);
   let airline2 = accounts[2];
   let airline3 = accounts[3];
   let airline4 = accounts[4];
