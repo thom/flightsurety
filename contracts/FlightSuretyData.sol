@@ -32,11 +32,15 @@ contract FlightSuretyData {
   // Flights
   struct Flight {
     bool isRegistered;
-    uint8 statusCode;
+    uint8 statusCode; // 0: unknown (in-flight), >0: landed
     uint256 updatedTimestamp;
     address airline;
+    string flight;
+    string from;
+    string to;
   }
   mapping(bytes32 => Flight) private flights;
+  bytes32[] registeredFlights = new bytes32[](0);
 
   /********************************************************************************************/
   /*                                       CONSTRUCTOR                                        */
@@ -92,12 +96,29 @@ contract FlightSuretyData {
     _;
   }
 
+  /**
+   * @dev Modifier that requires airline to be funded
+   */
+  modifier requireAirlineIsFunded(address airline) {
+    require(this.isFundedAirline(airline), "Only existing and funded airlines are allowed");
+    _;
+  }
+
+  /**
+   * @dev Modifier that requires address to be valid
+   */
+  modifier requireValidAddress(address addr) {
+    require(addr != address(0), "Invalid address");
+    _;
+  }
+
   /********************************************************************************************/
   /*                                       EVENT DEFINITIONS                                  */
   /********************************************************************************************/
 
   event AirlineRegistered(string name, address addr);
   event AirlineFunded(string name, address addr);
+  event FlightRegistered(bytes32 flightKey, address airline, string flight, string from, string to, uint256 timestamp);
 
   /********************************************************************************************/
   /*                                       UTILITY FUNCTIONS                                  */
@@ -149,6 +170,14 @@ contract FlightSuretyData {
   }
 
   /**
+   * @dev Check if the flight is registered
+   */
+  function isFlight(address airline, string calldata flight, uint256 timestamp) external view returns(bool) {
+    bytes32 key = getFlightKey(airline, flight, timestamp);
+    return flights[key].isRegistered;
+  }
+
+  /**
    * @dev Sets contract operations on/off
    *
    * When operational mode is disabled, all write transactions except for this one will fail
@@ -197,7 +226,7 @@ contract FlightSuretyData {
    * @dev Add an airline to the registration queue
    *      Can only be called from FlightSuretyApp contract
    */
-  function registerAirline(string calldata name, address addr) external requireIsOperational requireIsCallerAuthorized returns(bool success) {
+  function registerAirline(string calldata name, address addr) external requireIsOperational requireIsCallerAuthorized requireValidAddress(addr) returns(bool success) {
     require(!airlines[addr].isRegistered, "Airline has already been registered");
 
     bool result = true;
@@ -221,6 +250,28 @@ contract FlightSuretyData {
   function fundAirline(address addr) payable external requireIsOperational requireIsCallerAuthorized {
     airlines[addr].isFunded = true;
     emit AirlineFunded(airlines[addr].name, addr);
+  }
+
+  /**
+   * @dev Register a flight
+   */
+  function registerFlight(address airline, string calldata flight, string calldata from, string calldata to, uint256 timestamp) external requireIsOperational requireIsCallerAuthorized requireValidAddress(airline) requireAirlineIsFunded(airline) {
+    bytes32 flightKey = getFlightKey(airline, flight, timestamp);
+    require(!flights[flightKey].isRegistered, "Flight has already been registered");
+
+    flights[flightKey] = Flight({
+      isRegistered: true,
+      statusCode: 0,
+      updatedTimestamp: timestamp,
+      airline: airline,
+      flight: flight,
+      from: from,
+      to: to
+    });
+
+    registeredFlights.push(flightKey);
+
+    emit FlightRegistered(flightKey, airline, flight, from, to, timestamp);
   }
 
   /**

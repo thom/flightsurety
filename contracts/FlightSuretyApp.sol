@@ -87,9 +87,24 @@ contract FlightSuretyApp {
   /**
    * @dev Modifier that requires the "ContractOwner" account to be the function caller
    */
-  modifier requireContractOwner()
-  {
+  modifier requireContractOwner() {
     require(msg.sender == contractOwner, "Caller is not contract owner");
+    _;
+  }
+
+  /**
+   * @dev Modifier that requires airline to be funded
+   */
+  modifier requireAirlineIsFunded(address airline) {
+    require(flightSuretyData.isFundedAirline(airline), "Only existing and funded airlines are allowed");
+    _;
+  }
+
+  /**
+   * @dev Modifier that requires address to be valid
+   */
+  modifier requireValidAddress(address addr) {
+    require(addr != address(0), "Invalid address");
     _;
   }
 
@@ -98,6 +113,8 @@ contract FlightSuretyApp {
   /********************************************************************************************/
 
   event AirlineRegistered(string name, address addr, bool success, uint256 votes);
+  event AirlineFunded(address addr, uint value);
+  event FlightRegistered(address airline, string flight, string from, string to, uint256 timestamp);
 
   /********************************************************************************************/
   /*                                       UTILITY FUNCTIONS                                  */
@@ -113,14 +130,11 @@ contract FlightSuretyApp {
 
   /**
    * @dev Add an airline to the registration queue
+   * 
+   * Multiparty Consensus: Only existing airline may register a new airline until there are at least four airlines registered
+   * Airline Ante: Airline can be registered, but does not participate in contract until it submits funding of 10 ether
    */
-  function registerAirline(string memory name, address addr) public requireIsOperational returns(bool success, uint256 votes) {
-    require(addr != address(0), "Invalid address");
-
-    // Multiparty Consensus: Only existing airline may register a new airline until there are at least four airlines registered
-    // Airline Ante: Airline can be registered, but does not participate in contract until it submits funding of 10 ether
-    require(flightSuretyData.isFundedAirline(msg.sender), "Only existing and funded airlines may register a new airline");
-
+  function registerAirline(string memory name, address addr) public requireIsOperational requireValidAddress(addr) requireAirlineIsFunded(msg.sender) returns(bool success, uint256 votes) {
     bool result = false;
     address[] memory registeredAirlines = flightSuretyData.getRegisteredAirlines();
 
@@ -163,13 +177,15 @@ contract FlightSuretyApp {
     require(msg.value >= AIRLINE_FUNDING_VALUE, "Not enough funding submitted");
     address(uint160(address(flightSuretyData))).transfer(msg.value);
     flightSuretyData.fundAirline(msg.sender);
+    emit AirlineFunded(msg.sender, msg.value);
   }
 
   /**
    * @dev Register a future flight for insuring.
    */  
-  function registerFlight() external requireIsOperational {
-
+  function registerFlight(string calldata flight, string calldata from, string calldata to, uint256 timestamp) external requireIsOperational requireValidAddress(msg.sender) requireAirlineIsFunded(msg.sender) {
+    flightSuretyData.registerFlight(msg.sender, flight, from, to, timestamp);
+    emit FlightRegistered(msg.sender, flight, from, to, timestamp);
   }
   
   /**
@@ -307,7 +323,7 @@ contract FlightSuretyApp {
 
     return random;
   }
-}   
+}
 
 // FlightSurety data contract interface
 contract FlightSuretyData {
@@ -321,4 +337,8 @@ contract FlightSuretyData {
   function isFundedAirline(address airline) external view returns(bool);
   function getRegisteredAirlines() external view returns(address[] memory);
   function fundAirline(address addr) payable external;
+
+  // Flights
+  function registerFlight(address airline, string calldata flight, string calldata from, string calldata to, uint256 timestamp) external;
+  function isFlight(address airline, string calldata flight, uint256 timestamp) external view returns(bool);
 }
