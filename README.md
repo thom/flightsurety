@@ -1,4 +1,4 @@
-# Project 8: FlightSurety
+# Udacity Blockchain Developer Nanodegree Program - Project 8: FlightSurety
 
 FlightSurety is a sample application project for Udacity's Blockchain course.
 
