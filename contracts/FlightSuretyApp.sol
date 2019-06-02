@@ -11,7 +11,7 @@ Passengers
 Oracles (Server App)
 [TODO] Functioning Oracle: Oracle functionality is implemented in the server app.
 [TODO] Oracle Initialization: Upon startup, 20+ oracles are registered and their assigned indexes are persisted in memory
-[TODO] Oracle Updates: Update flight status requests from client Dapp result in OracleRequest event emitted by Smart Contract that is captured by server (displays on [ole and handled in code)
+[TODO] Oracle Updates: Update flight status requests from client Dapp result in OracleRequest event emitted by Smart Contract that is captured by server (displays on console and handled in code)
 [TODO] Oracle Functionality: Server will loop through all registered oracles, identify those oracles for which the OracleRequest event applies, and respond by calling into FlightSuretyApp contract with random status code of Unknown (0), On Time (10) or Late Airline (20), Late Weather (30), Late Technical (40), or Late Other (50)
 */
 
@@ -63,6 +63,7 @@ contract FlightSuretyApp {
   *
   */
   constructor(address dataContract) public {
+    contractOwner = msg.sender;
     flightSuretyData = FlightSuretyData(dataContract);
   }
 
