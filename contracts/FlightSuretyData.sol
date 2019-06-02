@@ -42,6 +42,16 @@ contract FlightSuretyData {
   mapping(bytes32 => Flight) private flights;
   bytes32[] registeredFlights = new bytes32[](0);
 
+  // Insurances
+  struct Insurance {
+    address passenger;
+    uint256 payment; // Passenger insurance payment
+    uint256 multiplier; // General damages multiplier (1.5x by default)
+    bool isCredited;
+  }
+  mapping (bytes32 => Insurance[]) insuredPassengersPerFlight;
+  mapping (address => uint) public pendingPayments;
+
   /********************************************************************************************/
   /*                                       CONSTRUCTOR                                        */
   /********************************************************************************************/
