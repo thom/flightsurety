@@ -122,6 +122,25 @@ contract FlightSuretyData {
     _;
   }
 
+  /**
+   * @dev Limit rate of withdrawals
+   */
+  modifier rateLimit(uint time) {
+    require(block.timestamp >= enabled, "Rate limiting in effect");
+    enabled = enabled.add(time);
+    _;
+  }
+
+  /**
+   * @dev Prevent re-entrancy bugs for withdrawals
+   */
+  modifier entrancyGuard() {
+    counter = counter.add(1);
+    uint256 guard = counter;
+    _;
+    require(guard == counter, "That is not allowd");
+  }
+
   /********************************************************************************************/
   /*                                       EVENT DEFINITIONS                                  */
   /********************************************************************************************/
