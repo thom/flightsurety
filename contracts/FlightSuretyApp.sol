@@ -3,7 +3,6 @@ pragma solidity ^0.5.0;
 /*
 Passengers
 [TODO] Passenger Airline Choice: Passengers can choose from a fixed list of flight numbers and departure that are defined in the Dapp client
-[TODO] Passenger Payment: Passengers may pay up to 1 ether for purchasing flight insurance.
 [TODO] Passenger Repayment: If flight is delayed due to airline fault, passenger receives credit of 1.5X the amount they paid
 [TODO] Passenger Withdraw: Passenger can withdraw any funds owed to them as a result of receiving credit for insurance payout
 [TODO] Insurance Payouts: Insurance payouts are not sent directly to passenger’s wallet
@@ -34,15 +33,8 @@ contract FlightSuretyApp {
   // FlightSurety data contract
   FlightSuretyData flightSuretyData;
 
-  // Flight status codes
-  uint8 private constant STATUS_CODE_UNKNOWN = 0;
-  uint8 private constant STATUS_CODE_ON_TIME = 10;
-  uint8 private constant STATUS_CODE_LATE_AIRLINE = 20;
-  uint8 private constant STATUS_CODE_LATE_WEATHER = 30;
-  uint8 private constant STATUS_CODE_LATE_TECHNICAL = 40;
-  uint8 private constant STATUS_CODE_LATE_OTHER = 50;
-
-  address private contractOwner;          // Account used to deploy contract
+  // Account used to deploy contract
+  address private contractOwner;
 
   // Multi-party consensus for airline registration
   mapping(address => address[]) private registerAirlineMultiCalls;
@@ -53,6 +45,12 @@ contract FlightSuretyApp {
 
   // Airline Ante: Airline can be registered, but does not participate in contract until it submits funding of 10 ether
   uint constant AIRLINE_FUNDING_VALUE = 10 ether;
+
+  // Passenger Payment: Passengers may pay up to 1 ether for purchasing flight insurance
+  uint constant MAX_PASSENGER_INSURANCE_VALUE = 1 ether;
+
+  // Insurance multiplier in percentage
+  uint constant INSURANCE_MULTIPLIER = 150; // 150%
 
   /********************************************************************************************/
   /*                                       CONSTRUCTOR                                        */
@@ -114,8 +112,9 @@ contract FlightSuretyApp {
   /********************************************************************************************/
 
   event AirlineRegistered(string name, address addr, bool success, uint256 votes);
-  event AirlineFunded(address addr, uint value);
+  event AirlineFunded(address addr, uint amount);
   event FlightRegistered(address airline, string flight, string from, string to, uint256 timestamp);
+  event InsuranceBought(address airline, string flight, uint256 timestamp, address passenger, uint256 amount, uint256 multiplier);
 
   /********************************************************************************************/
   /*                                       UTILITY FUNCTIONS                                  */
@@ -175,9 +174,11 @@ contract FlightSuretyApp {
    * @dev Submit funding for airline
    */   
   function fundAirline() payable external requireIsOperational {
-    require(msg.value >= AIRLINE_FUNDING_VALUE, "Not enough funding submitted");
+    require(msg.value == AIRLINE_FUNDING_VALUE, "Not correct funding value submitted");
+
     address(uint160(address(flightSuretyData))).transfer(msg.value);
     flightSuretyData.fundAirline(msg.sender);
+
     emit AirlineFunded(msg.sender, msg.value);
   }
 
@@ -188,12 +189,27 @@ contract FlightSuretyApp {
     flightSuretyData.registerFlight(msg.sender, flight, from, to, timestamp);
     emit FlightRegistered(msg.sender, flight, from, to, timestamp);
   }
+
+  /**
+   * @dev Buy insurance for a flight
+   */   
+  function buyInsurance(address airline, string calldata flight, uint256 timestamp) external payable requireIsOperational {
+    require(msg.value > 0 && msg.value <= MAX_PASSENGER_INSURANCE_VALUE, "Insurance value is not within the limits");
+    require(flightSuretyData.isFlight(airline, flight, timestamp), "Flight is not registered");
+    require(!flightSuretyData.isLandedFlight(airline, flight, timestamp), "Flight already landed");
+    require(!flightSuretyData.isInsured(msg.sender, airline, flight, timestamp), "Passenger already bought insurance for this flight");
   
+    address(uint160(address(flightSuretyData))).transfer(msg.value);
+    flightSuretyData.buy(airline, flight, timestamp, msg.sender, msg.value, INSURANCE_MULTIPLIER);
+
+    emit InsuranceBought(airline, flight, timestamp, msg.sender, msg.value, INSURANCE_MULTIPLIER);
+  }
+
   /**
    * @dev Called after oracle has updated flight status
    */  
   function processFlightStatus(address airline, string memory flight, uint256 timestamp, uint8 statusCode) internal requireIsOperational {
-
+    flightSuretyData.processFlightStatus(airline, flight, timestamp, statusCode);
   }
 
   // Generate a request for oracles to fetch flight information
@@ -342,4 +358,11 @@ contract FlightSuretyData {
   // Flights
   function registerFlight(address airline, string calldata flight, string calldata from, string calldata to, uint256 timestamp) external;
   function isFlight(address airline, string calldata flight, uint256 timestamp) external view returns(bool);
+  function isLandedFlight(address airline, string calldata flight, uint256 timestamp) external view returns(bool);
+  function processFlightStatus(address airline, string calldata flight, uint256 timestamp, uint8 statusCode) external;
+  function getFlightStatusCode(address airline, string calldata flight, uint256 timestamp) external view returns(uint8);
+
+  // Passengers
+  function buy(address airline, string calldata flight, uint256 timestamp, address passenger, uint256 amount, uint256 multiplier) external payable;
+  function isInsured(address passenger, address airline, string calldata flight, uint256 timestamp) external view returns (bool);
 }

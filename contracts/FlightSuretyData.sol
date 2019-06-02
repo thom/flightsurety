@@ -9,8 +9,23 @@ contract FlightSuretyData {
   /*                                       DATA VARIABLES                                     */
   /********************************************************************************************/
 
-  address private contractOwner;                                      // Account used to deploy contract
-  bool private operational = true;                                    // Blocks all state changes throughout the contract if false
+  // Account used to deploy contract
+  address private contractOwner;
+
+  // Flight status codes
+  uint8 private constant STATUS_CODE_UNKNOWN = 0;
+  uint8 private constant STATUS_CODE_ON_TIME = 10;
+  uint8 private constant STATUS_CODE_LATE_AIRLINE = 20;
+  uint8 private constant STATUS_CODE_LATE_WEATHER = 30;
+  uint8 private constant STATUS_CODE_LATE_TECHNICAL = 40;
+  uint8 private constant STATUS_CODE_LATE_OTHER = 50;
+
+  // Rate limit and entrancy guard
+  uint256 private enabled = block.timestamp;
+  uint256 private counter = 1;
+
+  // Blocks all state changes throughout the contract if false                                    
+  bool private operational = true;
 
   // Multi-party consensus
   // Added to setOperational() to practice the concept
@@ -45,7 +60,7 @@ contract FlightSuretyData {
   // Insurances
   struct Insurance {
     address passenger;
-    uint256 payment; // Passenger insurance payment
+    uint256 amount; // Passenger insurance payment
     uint256 multiplier; // General damages multiplier (1.5x by default)
     bool isCredited;
   }
@@ -148,6 +163,8 @@ contract FlightSuretyData {
   event AirlineRegistered(string name, address addr);
   event AirlineFunded(string name, address addr);
   event FlightRegistered(bytes32 flightKey, address airline, string flight, string from, string to, uint256 timestamp);
+  event InsuranceBought(address airline, string flight, uint256 timestamp, address passenger, uint256 amount, uint256 multiplier);
+  event FlightStatusUpdated(address airline, string flight, uint256 timestamp, uint8 statusCode);
 
   /********************************************************************************************/
   /*                                       UTILITY FUNCTIONS                                  */
@@ -201,9 +218,35 @@ contract FlightSuretyData {
   /**
    * @dev Check if the flight is registered
    */
+  function getFlightStatusCode(address airline, string calldata flight, uint256 timestamp) external view returns(uint8) {
+    return flights[getFlightKey(airline, flight, timestamp)].statusCode;
+  }
+
+  /**
+   * @dev Check if the flight is registered
+   */
   function isFlight(address airline, string calldata flight, uint256 timestamp) external view returns(bool) {
-    bytes32 key = getFlightKey(airline, flight, timestamp);
-    return flights[key].isRegistered;
+    return flights[getFlightKey(airline, flight, timestamp)].isRegistered;
+  }
+
+  /**
+   * @dev Check if the flight status code is "landed"
+   */
+  function isLandedFlight(address airline, string calldata flight, uint256 timestamp) external view returns(bool) {
+    return flights[getFlightKey(airline, flight, timestamp)].statusCode > STATUS_CODE_UNKNOWN;
+  }
+
+  /**
+   * @dev Check if the passenger is registerd for the flight
+   */
+  function isInsured(address passenger, address airline, string calldata flight, uint256 timestamp) external view returns (bool) {
+    Insurance[] memory insuredPassengers = insuredPassengersPerFlight[getFlightKey(airline, flight, timestamp)];
+    for(uint i = 0; i < insuredPassengers.length; i++) {
+      if (insuredPassengers[i].passenger == passenger) {
+        return true;
+      }
+    }
+    return false;
   }
 
   /**
@@ -276,7 +319,7 @@ contract FlightSuretyData {
   /**
    * @dev Submit funding for airline
    */   
-  function fundAirline(address addr) payable external requireIsOperational requireIsCallerAuthorized {
+  function fundAirline(address addr) external requireIsOperational requireIsCallerAuthorized {
     airlines[addr].isFunded = true;
     emit AirlineFunded(airlines[addr].name, addr);
   }
@@ -304,16 +347,43 @@ contract FlightSuretyData {
   }
 
   /**
+   * @dev Process flights
+   */
+  function processFlightStatus(address airline, string calldata flight, uint256 timestamp, uint8 statusCode) external requireIsOperational requireIsCallerAuthorized {
+    //require(!this.isLandedFlight(airline, flight, timestamp), "Flight already landed");
+
+    bytes32 flightKey = getFlightKey(airline, flight, timestamp);    
+    
+    if (flights[flightKey].statusCode == STATUS_CODE_UNKNOWN) {
+      flights[flightKey].statusCode = statusCode;
+      if(statusCode == STATUS_CODE_LATE_AIRLINE) {
+        creditInsurees(airline, flight, timestamp);
+      }
+    }
+
+    emit FlightStatusUpdated(airline, flight, timestamp, statusCode);
+  }
+
+  /**
    * @dev Buy insurance for a flight
    */   
-  function buy() external payable requireIsOperational {
+  function buy(address airline, string calldata flight, uint256 timestamp, address passenger, uint256 amount, uint256 multiplier) external requireIsOperational requireIsCallerAuthorized {
+    bytes32 flightKey = getFlightKey(airline, flight, timestamp);
 
+    insuredPassengersPerFlight[flightKey].push(Insurance({
+      passenger: passenger,
+      amount: amount,
+      multiplier: multiplier,
+      isCredited: false
+    }));
+
+    emit InsuranceBought(airline, flight, timestamp, passenger, amount, multiplier);
   }
 
   /**
    * @dev Credits payouts to insurees
    */
-  function creditInsurees() external requireIsOperational requireIsCallerAuthorized {
+  function creditInsurees(address airline, string memory flight, uint256 timestamp) internal requireIsOperational requireIsCallerAuthorized {
   }
   
 
