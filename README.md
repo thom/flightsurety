@@ -4,38 +4,62 @@ FlightSurety is a sample application project for Udacity's Blockchain course.
 
 ## Install
 
-This repository contains Smart Contract code in Solidity (using Truffle), tests (also using Truffle), dApp scaffolding (using HTML, CSS and JS) and server app scaffolding.
+This repository contains Smart Contract code in Solidity (using Truffle), tests (also using Truffle), DApp scaffolding (using HTML, CSS and JS) and server app scaffolding.
 
-To install, download or clone the repo, then:
+To install, download or clone the repository, then:
 
-`npm install`
-`truffle compile`
+```
+npm install
+```
+
+Fix the pragma in ```node_modules/openzeppelin-solidity/contracts/math/SafeMath.sol```:
+
+```
+pragma solidity ^0.5.0;
+```
+
+Compile the contracts:
+
+```
+truffle compile
+```
 
 ## Develop Client
 
 To run truffle tests:
 
-`truffle test ./test/flightSurety.js`
-`truffle test ./test/oracles.js`
+```
+truffle test ./test/flightSurety.js
+truffle test ./test/oracles.js
+```
 
 To use the dapp:
 
-`truffle migrate`
-`npm run dapp`
+```
+truffle migrate
+npm run dapp
+```
 
-To view dapp:
+To view DApp:
 
-`http://localhost:8000`
+```
+http://localhost:8000
+```
 
 ## Develop Server
 
-`npm run server`
-`truffle test ./test/oracles.js`
+```
+npm run server
+truffle test ./test/oracles.js
+```
 
 ## Deploy
 
-To build dapp for prod:
-`npm run dapp:prod`
+To build DApp for prod:
+
+```
+npm run dapp:prod
+```
 
 Deploy the contents of the ./dapp folder
 
@@ -59,7 +83,7 @@ Graded according to the [Project Rubric](https://review.udacity.com/#!/rubrics/1
 
 ### Requirement 3: Passengers
 
-* Passengers may pay upto 1 ether for purchasing flight insurance
+* Passengers may pay up to 1 ether for purchasing flight insurance
 * Flight numbers and timestamps are fixed for the purpose of the project and can be defined in the DApp client
 * If the flight is delayed due to airline fault, passenger receives credit of 1.5x the amount they paid
 * Funds are transfered from contract to the passenger wallet only when they initiate a withdrawal
@@ -87,3 +111,10 @@ Graded according to the [Project Rubric](https://review.udacity.com/#!/rubrics/1
 * [Solidity Language Reference](http://solidity.readthedocs.io/en/v0.4.24/)
 * [Ethereum Blockchain Explorer](https://etherscan.io/)
 * [Web3Js Reference](https://github.com/ethereum/wiki/wiki/JavaScript-API)
+
+## Versions
+
+* Truffle v5.0.18 (core: 5.0.18)
+* Solidity - ^0.5.0 (solc-js)
+* Node v10.15.3
+* Web3.js v1.0.0-beta.37
