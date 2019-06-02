@@ -6,7 +6,8 @@ contract('Flight Surety Tests', async (accounts) => {
 
   // Constants
   const AIRLINE_FUNDING_VALUE = web3.utils.toWei("10", "ether");
-  const PASSENGER_INSURANCE_VALUE = web3.utils.toWei("1", "ether");
+  const PASSENGER_INSURANCE_VALUE_1 = web3.utils.toWei("1", "ether");
+  const PASSENGER_INSURANCE_VALUE_2 = web3.utils.toWei("0.5", "ether");
   const TIMESTAMP = Math.floor(Date.now() / 1000);
   const STATUS_CODE_LATE_AIRLINE = 20;
   const TEST_ORACLES_COUNT = 20;
@@ -297,7 +298,7 @@ contract('Flight Surety Tests', async (accounts) => {
     it('(passenger) cannot buy insurance above insurance limit', async () => {
       let reverted = false;
       try {
-        await config.flightSuretyApp.buyInsurance(flight2.airline, flight2.flight, flight2.timestamp, {from: passenger1, value: PASSENGER_INSURANCE_VALUE + 1, gasPrice: 0});
+        await config.flightSuretyApp.buyInsurance(flight2.airline, flight2.flight, flight2.timestamp, {from: passenger1, value: PASSENGER_INSURANCE_VALUE_1 + 1, gasPrice: 0});
       }
       catch(e) {
         //console.log(e);
@@ -310,7 +311,7 @@ contract('Flight Surety Tests', async (accounts) => {
     it('(passenger) can buy insurance', async () => {
       let result = undefined;
       try {
-        await config.flightSuretyApp.buyInsurance(flight2.airline, flight2.flight, flight2.timestamp, {from: passenger1, value: PASSENGER_INSURANCE_VALUE, gasPrice: 0});
+        await config.flightSuretyApp.buyInsurance(flight2.airline, flight2.flight, flight2.timestamp, {from: passenger1, value: PASSENGER_INSURANCE_VALUE_1, gasPrice: 0});
       }
       catch(e) {
         console.log(e);
@@ -322,7 +323,7 @@ contract('Flight Surety Tests', async (accounts) => {
     it('(passenger) cannot buy insurance for the same flight twice', async () => {
       let reverted = false;
       try {
-        await config.flightSuretyApp.buyInsurance(flight2.airline, flight2.flight, flight2.timestamp, {from: passenger1, value: PASSENGER_INSURANCE_VALUE, gasPrice: 0});
+        await config.flightSuretyApp.buyInsurance(flight2.airline, flight2.flight, flight2.timestamp, {from: passenger1, value: PASSENGER_INSURANCE_VALUE_1, gasPrice: 0});
       }
       catch(e) {
         //console.log(e);
@@ -335,7 +336,7 @@ contract('Flight Surety Tests', async (accounts) => {
     it('(passenger) more than one passenger can register for the same flight', async () => {
       let result = undefined;
       try {
-        await config.flightSuretyApp.buyInsurance(flight2.airline, flight2.flight, flight2.timestamp, {from: passenger2, value: PASSENGER_INSURANCE_VALUE, gasPrice: 0});
+        await config.flightSuretyApp.buyInsurance(flight2.airline, flight2.flight, flight2.timestamp, {from: passenger2, value: PASSENGER_INSURANCE_VALUE_2, gasPrice: 0});
       }
       catch(e) {
         console.log(e);
@@ -393,11 +394,38 @@ contract('Flight Surety Tests', async (accounts) => {
 
   describe('(insurance) test passenger functionality', function() {
     it('(insurance) insured amount credited is multiplied by the configured multiplier', async () => {
-      // TODO
+      let amount1 = await config.flightSuretyData.getPendingPaymentAmount(passenger1);
+      let amount2 = await config.flightSuretyData.getPendingPaymentAmount(passenger2);
+      let multiplier = 1.5;
+      assert.equal(amount1, PASSENGER_INSURANCE_VALUE_1 * 1.5, "Insurance amount not as expected");
+      assert.equal(amount2, PASSENGER_INSURANCE_VALUE_2 * 1.5, "Insurance amount not as expected");
     });
 
     it('(insurance) can withdraw amount', async () => {
-      // TODO
+      let amount1 = await config.flightSuretyData.getPendingPaymentAmount(passenger1);
+      let balanceBeforePay1 = await web3.eth.getBalance(passenger1);
+
+      let amount2 = await config.flightSuretyData.getPendingPaymentAmount(passenger2);
+      let balanceBeforePay2 = await web3.eth.getBalance(passenger2);
+
+      try {
+        await config.flightSuretyApp.pay({from: passenger1, gasPrice: 0});
+        await config.flightSuretyApp.pay({from: passenger2, gasPrice: 0});
+      } catch (e) {
+        console.log(e);
+      }
+      let balanceAfterPay1 = await web3.eth.getBalance(passenger1);
+      let balanceAfterPay2 = await web3.eth.getBalance(passenger2);
+
+      //console.log('1) Balance before pay: ' + balanceBeforePay1);
+      //console.log('1) Balance afer pay: ' + balanceAfterPay1);
+      //console.log('1) Difference: ' + (balanceAfterPay1 - balanceBeforePay1));
+      //console.log('2) Balance before pay: ' + balanceBeforePay2);
+      //console.log('2) Balance afer pay: ' + balanceAfterPay2);
+      //console.log('2) Difference: ' + (balanceAfterPay2 - balanceBeforePay2));
+
+      assert.equal((balanceAfterPay1 - balanceBeforePay1), amount1, "Cannot withdraw insurance from account");
+      assert.equal((balanceAfterPay2 - balanceBeforePay2), amount2, "Cannot withdraw insurance from account");
     });
   });
 });
