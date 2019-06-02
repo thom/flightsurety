@@ -1,19 +1,5 @@
 pragma solidity ^0.5.0;
 
-/*
-Passengers
-[TODO] Passenger Airline Choice: Passengers can choose from a fixed list of flight numbers and departure that are defined in the Dapp client
-[TODO] Passenger Repayment: If flight is delayed due to airline fault, passenger receives credit of 1.5X the amount they paid
-[TODO] Passenger Withdraw: Passenger can withdraw any funds owed to them as a result of receiving credit for insurance payout
-[TODO] Insurance Payouts: Insurance payouts are not sent directly to passenger’s wallet
-
-Oracles (Server App)
-[TODO] Functioning Oracle: Oracle functionality is implemented in the server app.
-[TODO] Oracle Initialization: Upon startup, 20+ oracles are registered and their assigned indexes are persisted in memory
-[TODO] Oracle Updates: Update flight status requests from client Dapp result in OracleRequest event emitted by Smart Contract that is captured by server (displays on console and handled in code)
-[TODO] Oracle Functionality: Server will loop through all registered oracles, identify those oracles for which the OracleRequest event applies, and respond by calling into FlightSuretyApp contract with random status code of Unknown (0), On Time (10) or Late Airline (20), Late Weather (30), Late Technical (40), or Late Other (50)
-*/
-
 // It's important to avoid vulnerabilities due to numeric overflow bugs
 // OpenZeppelin's SafeMath library, when used correctly, protects agains such bugs
 // More info: https://www.nccgroup.trust/us/about-us/newsroom-and-events/blog/2018/november/smart-contract-insecurity-bad-arithmetic/
@@ -176,7 +162,9 @@ contract FlightSuretyApp {
   function fundAirline() payable external requireIsOperational {
     require(msg.value == AIRLINE_FUNDING_VALUE, "Not correct funding value submitted");
 
+    // Cast address to payable address
     address(uint160(address(flightSuretyData))).transfer(msg.value);
+    
     flightSuretyData.fundAirline(msg.sender);
 
     emit AirlineFunded(msg.sender, msg.value);
@@ -199,7 +187,9 @@ contract FlightSuretyApp {
     require(!flightSuretyData.isLandedFlight(airline, flight, timestamp), "Flight already landed");
     require(!flightSuretyData.isInsured(msg.sender, airline, flight, timestamp), "Passenger already bought insurance for this flight");
   
+    // Cast address to payable address
     address(uint160(address(flightSuretyData))).transfer(msg.value);
+    
     flightSuretyData.buy(airline, flight, timestamp, msg.sender, msg.value, INSURANCE_MULTIPLIER);
 
     emit InsuranceBought(airline, flight, timestamp, msg.sender, msg.value, INSURANCE_MULTIPLIER);
@@ -221,7 +211,14 @@ contract FlightSuretyApp {
     oracleResponses[key] = ResponseInfo({requester: msg.sender, isOpen: true});
 
     emit OracleRequest(index, airline, flight, timestamp);
-  } 
+  }
+
+  /**
+   * @dev Transfers eligible payout funds to insuree
+   */
+  function pay() public requireIsOperational {
+    flightSuretyData.pay(msg.sender);
+  }
 
   /********************************************************************************************/
   /*                                     ORACLE MANAGEMENT                                    */
@@ -365,4 +362,5 @@ contract FlightSuretyData {
   // Passengers
   function buy(address airline, string calldata flight, uint256 timestamp, address passenger, uint256 amount, uint256 multiplier) external payable;
   function isInsured(address passenger, address airline, string calldata flight, uint256 timestamp) external view returns (bool);
+  function pay(address passenger) external;
 }

@@ -165,6 +165,8 @@ contract FlightSuretyData {
   event FlightRegistered(bytes32 flightKey, address airline, string flight, string from, string to, uint256 timestamp);
   event InsuranceBought(address airline, string flight, uint256 timestamp, address passenger, uint256 amount, uint256 multiplier);
   event FlightStatusUpdated(address airline, string flight, uint256 timestamp, uint8 statusCode);
+  event InsureeCredited(address passenger, uint256 amount);
+  event AccountWithdrawn(address passenger, uint256 amount);
 
   /********************************************************************************************/
   /*                                       UTILITY FUNCTIONS                                  */
@@ -247,6 +249,13 @@ contract FlightSuretyData {
       }
     }
     return false;
+  }
+
+  /**
+   * @dev Return the pending payment
+   */
+  function getPendingPaymentAmount(address passenger) external view returns (uint256) {
+    return pendingPayments[passenger];
   }
 
   /**
@@ -384,14 +393,38 @@ contract FlightSuretyData {
    * @dev Credits payouts to insurees
    */
   function creditInsurees(address airline, string memory flight, uint256 timestamp) internal requireIsOperational requireIsCallerAuthorized {
+    bytes32 flightKey = getFlightKey(airline, flight, timestamp);
+
+    for (uint i = 0; i < insuredPassengersPerFlight[flightKey].length; i++) {
+      Insurance memory insurance = insuredPassengersPerFlight[flightKey][i];
+
+      if (insurance.isCredited == false) {
+        insurance.isCredited = true;
+        uint256 amount = insurance.amount.mul(insurance.multiplier).div(100);
+        pendingPayments[insurance.passenger] += amount;
+
+        emit InsureeCredited(insurance.passenger, amount);
+      }
+    }
   }
-  
 
   /**
    * @dev Transfers eligible payout funds to insuree
    */
-  function pay() external requireIsOperational requireIsCallerAuthorized {
+  function pay(address passenger) external requireIsOperational requireIsCallerAuthorized {
+    // Checks
+    require(passenger == tx.origin, "Contracts not allowed");
+    require(pendingPayments[passenger] > 0, "No fund available for withdrawal");
 
+    // Effects
+    uint256 amount = pendingPayments[passenger];
+    pendingPayments[passenger] = 0;
+
+    // Interaction
+    // Cast address to payable address
+    address(uint160(passenger)).transfer(amount);
+
+    emit AccountWithdrawn(passenger, amount);
   }
 
   /**
