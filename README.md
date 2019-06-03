@@ -1,12 +1,12 @@
 # Udacity Blockchain Developer Nanodegree Program - Project 8: FlightSurety
 
-FlightSurety is a sample application project for Udacity's Blockchain course.
+FlightSurety is a sample application project for Udacity's Blockchain course. 
+
+This repository contains smart contract code in Solidity (using Truffle), tests (also using Truffle), DApp (using HTML, CSS and JS) and server application.
 
 ## Install
 
-This repository contains Smart Contract code in Solidity (using Truffle), tests (also using Truffle), DApp scaffolding (using HTML, CSS and JS) and server app scaffolding.
-
-To install, download or clone the repository, then:
+To install, download or clone the repository and install all requisite npm packages (as listed in ```package.json```)::
 
 ```
 npm install
@@ -18,50 +18,73 @@ Fix the pragma in ```node_modules/openzeppelin-solidity/contracts/math/SafeMath.
 pragma solidity ^0.5.0;
 ```
 
-Compile the contracts:
+Launch Ganache:
+
+```ganache-cli  --gasLimit 300000000 --gasPrice 20000000000 -a 50 -m "forget chief exist liberty video cash twelve nest grief umbrella panel trumpet"```
+
+Your terminal should look something like this:
+
+![ganache-cli](images/ganache-cli.png)
+
+In a separate terminal window, compile the smart contracts:
 
 ```
 truffle compile
 ```
 
-## Develop Client
+Your terminal should look something like this:
 
-To run truffle tests:
+![truffle compile](images/truffle_compile.png)
+
+This will create the smart contract artifacts in folder build/contracts.
+
+Migrate smart contracts to the locally running blockchain, ganache-cli:
+
+```truffle migrate```
+
+Your terminal should look something like this:
+
+![truffle migrate](images/truffle_migrate.png)
+
+Test smart contracts:
+
+```truffle test```
+
+All 28 tests should pass.
+
+![truffle test](images/truffle_test.png)
+
+## DApp
+
+### Client
+
+To use the Dapp:
 
 ```
-truffle test ./test/flightSurety.js
-truffle test ./test/oracles.js
-```
-
-To use the dapp:
-
-```
-truffle migrate
 npm run dapp
 ```
 
-To view DApp:
+To view the DApp:
 
 ```
 http://localhost:8000
 ```
 
-## Develop Server
+### Server
 
 ```
 npm run server
-truffle test ./test/oracles.js
 ```
 
-## Deploy
+### Deploy
 
-To build DApp for prod:
+To build the DApp for production:
 
 ```
 npm run dapp:prod
 ```
 
-Deploy the contents of the ./dapp folder
+Deploy the contents of the ```./dapp``` folder
 
 ## Requirements
 
